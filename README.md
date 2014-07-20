@@ -58,4 +58,4 @@
 
 ###Special thanks to:
 
-** Philip Petev** for publishing HP Probook Installer Packages Project (pkgproj) sources
+**Philip Petev** for publishing HP Probook Installer Packages Project (pkgproj) sources
