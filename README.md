@@ -14,7 +14,7 @@
 
 [The VoodooPS2Controller support thread](http://www.tonymacx86.com/mavericks-laptop-support/87182-new-voodoops2controller-keyboard-trackpad-clickpad-support.html)
 
-**- ALXEthernet** is courtesy of *Shailua**, crucial changes by **Zephiris**
+**- ALXEthernet** is courtesy of **Shailua**, crucial changes by **Zephiris**
 
 [The original ALXEthernet.kext discussion thread](http://www.insanelymac.com/forum/topic/284119-experimental-atheros-ar813132515261627172-driver-for-107108/)
 
