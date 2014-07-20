@@ -1,0 +1,24 @@
+#!/bin/bash
+
+## remove custom HDA resources (if any) before installing new ones
+
+# 10.7.5+ resources
+hda_rsrc1="${3}/System/Library/Extensions/AppleHDA.kext/Contents/Resources/layout1.aml.zlib"
+hda_rsrc2="${3}/System/Library/Extensions/AppleHDA.kext/Contents/Resources/Platforms.aml.zlib"
+# < 10.7.5  resources
+hda_rsrc11="${3}/System/Library/Extensions/AppleHDA.kext/Contents/Resources/layout1.xml"
+hda_rsrc22="${3}/System/Library/Extensions/AppleHDA.kext/Contents/Resources/Platforms.xml"
+
+if [[ -e ${hda_rsrc1} && -e ${hda_rsrc2} ]]
+then
+    rm ${hda_rsrc1}
+    rm ${hda_rsrc2}
+fi
+
+if [[ -e ${hda_rsrc11} && -e ${hda_rsrc22} ]]
+then
+    rm ${hda_rsrc11}
+    rm ${hda_rsrc22}
+fi
+
+sh ./backup.sh ./list ${3}

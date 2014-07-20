@@ -1,0 +1,87 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww21000\viewh15020\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+
+\f0\fs24 \cf0 ASUS 1201N OSX Support Package is an all-in-one post installation tool for 64-bit OSX 10.7 to 10.10. Supported is only ASUS Eee PC 1201N, no support for 1201NL because of 32-bit CPU.\
+\
+
+\b NB:
+\b0 \
+Make sure to update your BIOS to {\field{\*\fldinst{HYPERLINK "https://dl.dropboxusercontent.com/u/2573233/mac0s_10.9/1201N/vbios_modded_bios/0326-1201N-VBIOS.zip"}}{\fldrslt 0326}} - it includes VBIOS mod to support native LCD resolution. Format a flash drive to FAT16 and put the enclosed file on it. When netbook starts press Alt+F2 to trigger boot block BIOS re-flash procedure. It can take up to 5 minutes to flash, be patient! \
+\
+\ul Don\'92t enable\ulnone  AHCI in BIOS, it will slow the boot process dramatically. With included ION driver 1201N will switch SATA controller to AHCI mode regardless of SATA mode in BIOS.\
+It is advised to \ul enable FSB667 clock \ulnone under Security > North-bridge Performance configuration, which will result in 2.0 GHz clock speed instead of default 1.6 GHz. Since core voltage remains the same the power draw and heat dissipation remain the same as well.\
+\
+\
+
+\b Change Log:\
+
+\b0 \
+
+\b Version 1.0. (July 20th, 2014):\
+\
+ CloverEFI:
+\b0 \
+ - Clover binaries updated  to r2771, see default 1201N config in OEM/1201N/ after installing\
+ - DisableLegacyUsbSupport() bug that prevented EHCI from working resolved when building x64-mcp release (boot7 for BlockIO)\
+ - kernel_patcher reworked for 10.7 - 10.10, in conjunction with FakeCPUID Atom 330 can boot OSX up to Yosemite\
+ - ScanSPD() reworked to support MCP79 chipset, memory module information is now properly read from DIMMs, not from SMBIOS\
+ - NewWay ACPI fixes enabled to make sure OperationRegions are corrected regardless of memory size\
+ \
+
+\b  ACPI:
+\b0 \
+ - DSDT patched from scratch by hand, minor corrections (IRQs, Darwin, WMI-related code removed) included in original table\
+ - SSDT-1 includes _PSS for Atom 330 (single as it doesn\'92t support EIST)\
+ - SSDT-2 includes _CST for Atom 330 (only C1 is supported)\
+ - SSDT-3 includes HWMonitor monitoring device that reports CPU Heatsink, Motherboard ambient temps and System Fan RPM\
+ - SSDT-4 includes ARPT (Atheros AR9825) fix and can be easily swapped if using another mPCIE module\
+ - SSDT-5 includes crucial Device Specific Method injections for MCP79/MPC7A platform\
+\
+
+\b  Audio:
+\b0 \
+ - ALC269Q patched from scratch and can\'92t be broken by OSX updates, the resource files are not overwritten and plists are not either\
+ - Ins and Outs are paired with auto detection, Headphones and Speakers retain different volume levels.\
+ - Audio loss after sleep resolved by using CodecCommander kernel extension with dedicated 1201N config. \
+\
+
+\b  Keyboard and Touchpad:
+\b0 \
+ - WMI code completely removed in favor of PS2K, using fork of RehabMan\'92s VoodooPS2 F-buttons can be used either in special mode (no Fn required) or in standard mode. Change the mode in System Preferences > Keyboard. \
+ - Configure keyboard as F3 - Expose, F6 - Show Desktop and you can swipe 3 fingers up to show desktop and 3 down for Expose. Disable F15/F16 brightness control.\
+ - Touchpad supports two finger momentum scrolling, \
+ - Touchpad supports palm rejection, it can be automatically disabled when USB mouse is plugged in (see System Preferences > Accessibility) \
+ - Touchpad can be disable either via dedicated button (LED will indicate the status) or with Fn+F9/F9 (depends on key mode used)\
+ - Touchpad state and LED will be reset if disabled when shutdown or restart are issued\
+\
+
+\b  Video and LCD panel:
+\b0 \
+ - Video BIOS hard-patched implementing 1360x768 screen resolution that allows sharper GUI in Clover and proper boot screen and verbose boot resolution\
+ - Backlight adjustment is made with subtle level transitions (even real Air2,1 doesn\'92t have that) using ACPIBacklight\
+ - Backlight level is correctly preserved in CMOS in order to apply at BIOS level after you restart or shut down\
+ - LCD panel display override added\
+ - LCD display backlight can be disabled with Fn+F7/F7 \
+ - ION 9400M VGA out works if plugged in at cold boot, HDMI works with hot-plug, but won\'92t pass audio .. ever.\
+ - Video Mirror mode can be toggled (when screen attached) with Fn+F7/F7\
+\
+
+\b  Miscellaneous:
+\b0 \
+ - Alcor Card Reader works (you won\'92t see it in System Profiler unless you plug in SD or keep and SD>microSD adapter in there at all times)\
+ - Built-in VGA UVC web cam is masked as Apple\'92 s FaceTime camera and works in default and third-party apps\
+ - Broadcom BT-270 bluetooth is masked as Apple\'92s Bluetooth Controller and can be switch off from menu bar in 10.8.5+, no ghost devices appear\
+ - Wi-Fi and Bluetooth can be disabled  simultaneously with Fn+F2/F2 (LED in the front toggles too)\
+ - Closing the LID will put the netbook to S3 sleep, but opening up won\'92t wake it (ASUS EC bug), HID tickle is required.\
+\
+
+\b  Kernel Extensions:
+\b0 \
+- All vanilla kernel extensions are retained untouched regardless of OSX version, a minimum set of kexts is used to get the system running\
+\
+\
+\
+}
