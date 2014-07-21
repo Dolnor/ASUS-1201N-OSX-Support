@@ -999,7 +999,7 @@
 					<key>PATH</key>
 					<string>Applications/HWMonitor/postinstall</string>
 					<key>PATH_TYPE</key>
-					<integer>1</integer>
+					<integer>3</integer>
 				</dict>
 				<key>PREINSTALL_PATH</key>
 				<dict/>
@@ -13933,9 +13933,9 @@
 				<key>POSTINSTALL_PATH</key>
 				<dict>
 					<key>PATH</key>
-					<string>/Users/dmitry/Desktop/DELL-SCT-Support/Applications/KextUtility/postinstall</string>
+					<string>Applications/KextUtility/postinstall</string>
 					<key>PATH_TYPE</key>
-					<integer>0</integer>
+					<integer>3</integer>
 				</dict>
 				<key>PREINSTALL_PATH</key>
 				<dict/>
