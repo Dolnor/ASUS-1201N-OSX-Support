@@ -2,6 +2,7 @@
 
 sle="${3}/System/Library/Extensions"
 osver=`sw_vers -productVersion`
+rc="/etc/rc.shutdown.d"
 
 # install codec commander based on system version
 if [ ${osver} == '10.7' -o ${osver} == '10.8' -o ${osver%??} == '10.7' -o ${osver%??} == '10.8' ]
@@ -40,7 +41,7 @@ backup="${3}/tmp/temp.plist"
 /usr/libexec/PlistBuddy -c "Set RtVariables:MLB $boardserial" ${config}
 
 ## compile and copy ACPI tables to ESP
-if [ -r "${3}/tmp/ACPI" ];
+if [ -d "${3}/tmp/ACPI" ];
 then
     ${3}/tmp/ACPI/iasl ${3}/tmp/ACPI/*.dsl
 
@@ -66,6 +67,16 @@ efi_mp="/Volumes/EFI"
 	then
 			diskutil umount $efi_mp
     fi
+
+# set up logout hook for nvram saving in yosemite
+if [ ${osver} == '10.10' -o ${osver%??} == '10.10' ]
+then
+    if [ -d "$rc" ];
+    then
+        chmod +x "${rc}"/80.save_nvram_plist.local
+        defaults write com.apple.loginwindow LogoutHook "${rc}"/80.save_nvram_plist.local
+    fi
+fi
 
 ## delete temp files used during installation
 rm -R "${3}/tmp/EFI"
