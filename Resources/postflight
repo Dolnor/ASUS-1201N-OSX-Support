@@ -68,13 +68,13 @@ efi_mp="/Volumes/EFI"
 			diskutil umount $efi_mp
     fi
 
-# set up logout hook for nvram saving in yosemite
+# set up logout hook for nvram saving in yosemite - not needed in DP5+
 if [ ${osver} == '10.10' -o ${osver%??} == '10.10' ]
 then
     if [ -d "$rc" ];
     then
-        chmod +x "${rc}"/80.save_nvram_plist.local
-        defaults write com.apple.loginwindow LogoutHook "${rc}"/80.save_nvram_plist.local
+        #chmod +x "${rc}"/80.save_nvram_plist.local
+        #defaults write com.apple.loginwindow LogoutHook "${rc}"/80.save_nvram_plist.local
     fi
 fi
 

@@ -1556,20 +1556,21 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
 
                     Method (EC0S, 1, NotSerialized) // Embedded Controller Sleep
                     {
-                        If(Arg0)
+                        If (LEqual (Arg0, 0x03))
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF28, One)))
+                            If (ECAV ())
                             {
-                                If (ECAV ())
+                                If (LNot (Acquire (MUEC, 0xFFFF)))
                                 {
-                                    If (LNot (Acquire (MUEC, 0xFFFF)))
-                                    {
-                                        Store (One, SF28)
-                                        Store (Zero, SF17)
-                                        Release (MUEC)
-                                    }
+                                    Store (One, SF28)
+                                    Release (MUEC)
                                 }
                             }
+                        }
+
+                        If (Arg0)
+                        {
+                            If (LLess (Arg0, 0x04)) {}
                         }
                     }
 
@@ -1577,13 +1578,13 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                     {
                         If (Arg0)
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF17, One)))
+                            If (LLess (Arg0, 0x04)) {}
+                            If (LEqual (Arg0, 0x03))
                             {
                                 If (ECAV ())
                                 {
                                     If (LNot (Acquire (MUEC, 0xFFFF)))
                                     {
-                                        Store (Zero, SF28)
                                         Store (One, SF17)
                                         Release (MUEC)
                                     }
@@ -2856,6 +2857,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                                 Return (LIDS)
                             }
                         }
+                        
                         Device (SLPB)
                         {
                             Name (_HID, EisaId ("PNP0C0E"))  // _HID: Hardware ID
@@ -8788,6 +8790,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         {
             Store (0x03, Arg0)
         }
+
+        ShiftLeft (Arg0, 0x04, DBG8)
         \_SB.PCI0.SBUS.ENAB ()
         Store (\_SB.PCI0.LPCB.EC.SF13, \_SB.LID0.LIDS)
         WAK (Arg0)
@@ -8798,11 +8802,22 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
             Store (WAXB, AAXB)
         }
 
-        Return (Package (0x02)
+        If (DerefOf (Index (WAKP, Zero)))
         {
-            Zero,
-            Zero
-        })
+            Store (Zero, Index (WAKP, One))
+        }
+        Else
+        {
+            Store (Arg0, Index (WAKP, One))
+        }
+
+        Notify (\_SB.PCI0.EHC1, Zero)
+        Notify (\_SB.PCI0.EHC2, Zero)
+        Notify (\_SB.PCI0.OHC1, Zero)
+        Notify (\_SB.PCI0.OHC2, Zero)
+        Notify (\_SB.PCI0.RP05.ARPT, Zero)
+        Notify (\_SB.PCI0.RP06.GIGE, Zero)
+        Return (WAKP)
     }
 
     Name (_S0, Package (0x04)  // _S0_: S0 System State

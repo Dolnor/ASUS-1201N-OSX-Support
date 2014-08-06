@@ -3,24 +3,25 @@
  * AML Disassembler version 20131218-64 [Jan  8 2014]
  * Copyright (c) 2000 - 2013 Intel Corporation
  * 
- * Disassembly of iASLV0YcHz.aml, Thu Jul 17 16:58:17 2014
+ * Disassembly of iASLhxCEbn.aml, Wed Aug  6 16:02:41 2014
  *
  * Original Table Header:
  *     Signature        "DSDT"
- *     Length           0x00008025 (32805)
+ *     Length           0x00008860 (34912)
  *     Revision         0x01 **** 32-bit table (V1), no 64-bit math support
- *     Checksum         0xA3
+ *     Checksum         0xC0
  *     OEM ID           "A1469"
  *     OEM Table ID     "A1469001"
  *     OEM Revision     0x00000001 (1)
  *     Compiler ID      "INTL"
- *     Compiler Version 0x20131218 (538120728)
+ *     Compiler Version 0x20100331 (537920305)
  */
-DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
+DefinitionBlock ("iASLhxCEbn.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
 {
-    External (_SB_.PCI0.LPCB.PS2K.MODE, IntObj)
-    External (_SB_.PCI0.LPCB.PS2K.LBTG, MethodObj)     
+    External (_SB_.PCI0.LPCB.PS2K.LBTG, MethodObj) 
     External (_SB_.PCI0.LPCB.PS2K.RFKL, MethodObj)
+
+    External (_SB_.PCI0.LPCB.PS2K.MODE, IntObj)
 
     Scope (_PR)
     {
@@ -220,7 +221,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         Zero, 
         Zero
     })
-
     Name (WAKP, Package (0x02)
     {
         Zero, 
@@ -245,7 +245,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         {
             If (_OSI ("Darwin"))
             {
-                Store (0x15, Local0)
+                Store (0x13, Local0)
             }
 
             If (_OSI ("Windows 2000"))
@@ -1004,8 +1004,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         Alias (RSII, RSI2)
         Alias (RSII, RSSA)
         Alias (RSII, RSMA)
-        
-        Device (PCI0) // nVidia Corporation MCP79 Host Bridge
+        Device (PCI0)
         {
             Name (_HID, EisaId ("PNP0A08"))  // _HID: Hardware ID
             Name (_CID, EisaId ("PNP0A03"))  // _CID: Compatible ID
@@ -1036,22 +1035,28 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 Return (PR00)
             }
 
-            Device (LPCB) // nVidia Corporation MCP79 LPC Bridge
+            Device (LPCB)
             {
                 Name (_ADR, 0x00030000)  // _ADR: Address
                 Method (SPTS, 1, NotSerialized)
                 {
+                    \RMDT.P2 ("SPTS: called", Arg0)
                     Store (One, PS1S)
+                    \RMDT.P1 ("SPTS: PS1S written One")
                     Store (One, PS1E)
+                    \RMDT.P1 ("SPTS: PS1E written One")
+                    \RMDT.P1 ("SPTS: finished")
                 }
 
                 Method (SWAK, 1, NotSerialized)
                 {
+                    \RMDT.P2 ("SWAK: called", Arg0)
                     Store (Zero, PS1E)
                     Store (0x02, S1CT)
                     Store (0x02, S3CT)
                     Store (0x02, S4CT)
                     Store (0x02, S5CT)
+                    \RMDT.P1 ("SWAK: finished")
                 }
 
                 OperationRegion (SMIE, SystemIO, SCIO, 0x08)
@@ -1304,7 +1309,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         }
                     }
 
-                    Method (ECAV, 0, NotSerialized) // Embedded Controller Availability
+                    Method (ECAV, 0, NotSerialized)
                     {
                         If (LEqual (REGC, Ones))
                         {
@@ -1554,42 +1559,55 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         GP31,   8
                     }
 
-                    Method (EC0S, 1, NotSerialized) // Embedded Controller Sleep
+                    Method (EC0S, 1, NotSerialized)
                     {
-                        If(Arg0)
+                        \RMDT.P2 ("EC0S: called", Arg0)
+                        If (LAnd (LEqual (Arg0, 0x03), LNotEqual (SF28, One)))
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF28, One)))
+                            \RMDT.P1 ("EC0S: EC needs to sleep")
+                            If (ECAV ())
                             {
-                                If (ECAV ())
+                                \RMDT.P1 ("EC0S: EC is available")
+                                If (LNot (Acquire (MUEC, 0xFFFF)))
                                 {
-                                    If (LNot (Acquire (MUEC, 0xFFFF)))
-                                    {
-                                        Store (One, SF28)
-                                        Store (Zero, SF17)
-                                        Release (MUEC)
-                                    }
+                                    \RMDT.P1 ("EC0S: mutex obtained")
+                                    Store (One, SF28)
+                                    Store (Zero, SF17)
+                                    \RMDT.P1 ("EC0S: EC notified to sleep")
+                                    Release (MUEC)
+                                    \RMDT.P1 ("EC0S: mutex released")
                                 }
                             }
                         }
+
+                        \RMDT.P1 ("EC0S: finished")
                     }
 
-                    Method (EC0W, 1, NotSerialized) // Embedded Controller Wake
+                    Method (EC0W, 1, NotSerialized)
                     {
+                        \RMDT.P2 ("EC0W: called", Arg0)
                         If (Arg0)
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF17, One)))
+                            If (LAnd (LEqual (Arg0, 0x03), LNotEqual (SF17, One)))
                             {
+                                \RMDT.P1 ("EC0W: EC needs to wake")
                                 If (ECAV ())
                                 {
+                                    \RMDT.P1 ("EC0W: EC is available")
                                     If (LNot (Acquire (MUEC, 0xFFFF)))
                                     {
+                                        \RMDT.P1 ("EC0W: mutex obtained")
                                         Store (Zero, SF28)
                                         Store (One, SF17)
+                                        \RMDT.P1 ("EC0W: EC notified to wake")
                                         Release (MUEC)
+                                        \RMDT.P1 ("EC0W: mutex released")
                                     }
                                 }
                             }
                         }
+
+                        \RMDT.P1 ("EC0W: finished")
                     }
                 }
 
@@ -1637,25 +1655,23 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         }
                     }
 
-                    Method (ECXW, 2, Serialized) // EC Write
+                    Method (ECXW, 2, Serialized)
                     {
                         If (ECAV ())
                         {
-                            // Locks Embedded Controller and writes data using ACPI EC interface protocol,
-                            // which utilizes port 66 and port 62 to push the value to a specified address
                             If (LNot (Acquire (MUEC, 0xFFFF)))
                             {
-                                IBFX () // Cause interrupt
+                                IBFX ()
                                 Store (Arg0, EC66)
                                 IBFX ()
                                 Store (Arg1, EC62)
                                 IBFX ()
-                                Release (MUEC) // Release EC lock
+                                Release (MUEC)
                             }
                         }
                     }
 
-                    Method (ECXR, 1, Serialized) // EC Read
+                    Method (ECXR, 1, Serialized)
                     {
                         Store (Ones, Local0)
                         If (ECAV ())
@@ -2714,8 +2730,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         DCPS,   1, 
                         LCDC,   1, 
                         P00C,   1, 
-                        TPLK,   1,  // Touchpad Lock bit
-                        FANC,   1,  // Fan Control bit
+                        TPLK,   1, 
+                        FANC,   1, 
                         BLTS,   1, 
                         DC2S,   1, 
                         FS70,   8, 
@@ -2745,29 +2761,39 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             THLS,   1
                         }
 
-                        Method (LPFS, 1, NotSerialized) // LPCB sleep sequence is only valid for shutdown case
+                        Method (LPFS, 1, NotSerialized)
                         {
+                            \RMDT.P2 ("LPFS: called", Arg0)
                             If (LEqual (Arg0, 0x05))
                             {
+                                \RMDT.P1 ("LPFS: shutdown requested")
+                                \RMDT.P2 ("LPFS: will write to 0xB2B0 NVS", GNVS (0x8078))
                                 SNVS (0x82B0, GNVS (0x8078))
                             }
+
+                            \RMDT.P1 ("LPFS: finished")
                         }
 
-                        Method (LPWK, 1, NotSerialized) // LPCB wake sequence
+                        Method (LPWK, 1, NotSerialized)
                         {
+                            \RMDT.P2 ("LPWSK: called", Arg0)
                             If (LEqual (Arg0, 0x03))
                             {
+                                \RMDT.P1 ("LPWK: coming from S3 sleep")
                                 \_SB.PCI0.LPCB.EC.UAPF ()
                                 \_SB.PCI0.LPCB.EC.UBPF ()
                                 \_SB.PCI0.LPCB.EC.STBR ()
+                                \RMDT.P1 ("LPWK: finished setting brightness")
                             }
 
                             Store (Arg0, WAKT)
                             Notify (\_SB.PCI0.BAT0, 0x81)
                             Notify (\_SB.PCI0.ADP1, 0x81)
+                            \RMDT.P1 ("LPWK: battery and ac adapter notified to wake")
                             If (LNot (GNVS (0x1655)))
                             {
                                 Notify (\_SB.PWRB, 0x02)
+                                \RMDT.P1 ("LPWK: power button notified to wake")
                             }
 
                             Notify (\_PR.CPU0, 0x80)
@@ -2778,6 +2804,9 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                                 Notify (\_PR.CPU1, 0x80)
                                 Notify (\_PR.CPU1, 0x81)
                             }
+
+                            \RMDT.P1 ("LPWK: CPUs notified to wake")
+                            \RMDT.P1 ("LPWK: finished")
                         }
                     }
 
@@ -2791,32 +2820,10 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             Name (_STA, 0x0B)  // _STA: Status
                         }
 
-
-                        /* 
-                        ** No use for this approach as 1201N is unable to sense when the LID is being open, 
-                        ** so no wake from LID is possible
-                        
                         Device (LID0)
                         {
                             Name (_HID, EisaId ("PNP0C0D"))  // _HID: Hardware ID
-                            Name (_PRW, Package (0x02)  // _PRW: Power Resources for Wake
-                            {
-                                0x0A, 
-                                0x03
-                            })
                             Name (LIDS, One)
-                            Method (_PSW, 1, NotSerialized)  // _PSW: Power State Wake
-                            {
-                                If (Arg0) // when LID gets closed we notify EC to cause S3 sleep event
-                                {
-                                    ^^PCI0.LPCB.EC.EC0S (0x03)
-                                }
-                                Else
-                                {
-                                    ^^PCI0.LPCB.EC.EC0W (0x03)
-                                }
-                            }
-
                             Method (_LID, 0, NotSerialized)  // _LID: Lid Status
                             {
                                 If (^^PCI0.LPCB.EC.ECAV ())
@@ -2826,36 +2833,18 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                                         Store (^^PCI0.LPCB.EC.SF13, LIDS)
                                         Release (^^PCI0.LPCB.EC.MUEC)
                                     }
-                                }
 
-                                Return (LIDS)
-                            }
-                        }
-                        */
-                        Device (LID0)
-                        {
-                            Name (_HID, EisaId ("PNP0C0D"))  // _HID: Hardware ID
-                            Name (LIDS, One)
-                            Method (_LID, 0, NotSerialized)  // _LID: Lid Status
-                            {
-                                If (^^PCI0.LPCB.EC.ECAV())
-                                {
-                                    If (LNot (Acquire (^^PCI0.LPCB.EC.MUEC, 0xFFFF)))
+                                    XOr (LIDS, One, Local0)
+                                    If (Local0)
                                     {
-                                        Store (^^PCI0.LPCB.EC.SF13, LIDS) // get LID state from EC
-                                        Release (^^PCI0.LPCB.EC.MUEC)
-                                    }
-                                    
-                                    XOr (LIDS, One, Local0) // EC stores inverted state, need to XOR
-                                    If (Local0) // if LID is closed 
-                                    {
-                                        Notify (SLPB, 0x80) // notify sleep button to cause S3
+                                        Notify (SLPB, 0x80)
                                     }
                                 }
 
                                 Return (LIDS)
                             }
                         }
+
                         Device (SLPB)
                         {
                             Name (_HID, EisaId ("PNP0C0E"))  // _HID: Hardware ID
@@ -2870,72 +2859,59 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         }
                     }
 
-                    /*
-                        Based on value of PS2K.MODE EC queries can be split into two actions, 
-                        each dedicated to separate key mode. This allows to create isolated behavior.
-                    */
-                    
                     Scope (PCI0.LPCB.EC)
                     {
-                        Method (_Q04, 0, NotSerialized)  // _Qxx: EC Query - Fn+F1 > Sleep
-                        {
-                            If (LEqual (^^PS2K.MODE, One)) 
-                            {
-                                Notify (SLPB, 0x80) // In Standard Key Mode causes sleep
-                            }
-                            Else // In Special Key Mode passes scancode e05f to PS2 driver for F1
-                            {
-                                Notify (PS2K, 0x025F) // Key Down
-                                Notify (PS2K, 0x02DF) // Key Up (Down+0x80)
-                            }
-                        }
-
-                        Method (_Q06, 0, NotSerialized)  // _Qxx: EC Query - Fn+F2 > RF Kill Switch
+                        Method (_Q04, 0, NotSerialized)  // _Qxx: EC Query
                         {
                             If (LEqual (^^PS2K.MODE, One))
                             {
-                                ^^PS2K.RFKL () // In Standard Mode toggles BT and WF state
+                                Notify (SLPB, 0x80)
                             }
-                            Else // In Special Mode passes scancode e007 to PS2 driver for F2
+                            Else
+                            {
+                                Notify (PS2K, 0x025F)
+                                Notify (PS2K, 0x02DF)
+                            }
+                        }
+
+                        Method (_Q06, 0, NotSerialized)  // _Qxx: EC Query
+                        {
+                            If (LEqual (^^PS2K.MODE, One))
+                            {
+                                ^^PS2K.RFKL ()
+                            }
+                            Else
                             {
                                 Notify (PS2K, 0x0207)
                                 Notify (PS2K, 0x0287)
                             }
                         }
 
-                        Method (_Q0B, 0, NotSerialized)  // _Qxx: EC Query - Fn+F5 > Brightness Down
+                        Method (_Q0B, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles brightness down event when in Standard Mode and acts as F5 in Special Mode
                             Notify (PS2K, 0x0205)
                             Notify (PS2K, 0x0285)
                         }
 
-                        Method (_Q0D, 0, NotSerialized)  // _Qxx: EC Query - Fn+F6 > Brightness Up
+                        Method (_Q0D, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles brightness up event when in Standard Mode and acts as F6 in Special Mode
                             Notify (PS2K, 0x0206)
                             Notify (PS2K, 0x0286)
                         }
 
-                        Method (_Q12, 0, NotSerialized)  // _Qxx: EC Query - Fn+F8 > Video Signal mirror
+                        Method (_Q12, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles vidmirror event when in Standard Mode and acts as F8 in Special Mode
                             Notify (PS2K, 0x026E)
                             Notify (PS2K, 0x02EE)
                         }
 
-                        Method (_Q14, 0, NotSerialized)  // _Qxx: EC Query - Fn+F9 > Touchpad toggle
+                        Method (_Q14, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // In Standard Mode passes scancode e037 to PS2 driver to stop-resume sending 
-                            // packets and toggle LED
                             If (LEqual (^^PS2K.MODE, One))
                             {
                                 Notify (PS2K, 0x0237)
                                 Notify (PS2K, 0x02B7)
-                            }   
-                            // Because there is a dedicated touchpad toggle button we can't just assign 
-                            // e037 to F9 or that button  would turn into F9 as well so we need it to generate 
-                            // a dedicated scancode e009 in Special Mode for F9 to work                     
+                            }
                             Else
                             {
                                 Notify (PS2K, 0x0209)
@@ -2943,28 +2919,25 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             }
                         }
 
-                        Method (_Q16, 0, NotSerialized)  // _Qxx: EC Query - Fn+F10 > Mute
+                        Method (_Q16, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles mute event when in Standard Mode and acts as F10 in Special Mode
                             Notify (PS2K, 0x0220)
                             Notify (PS2K, 0x02A0)
                         }
 
-                        Method (_Q17, 0, NotSerialized)  // _Qxx: EC Query - Fn+F11 > Volume Down
+                        Method (_Q17, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles volume down event when in Standard Mode and acts as F11 in Special Mode
                             Notify (PS2K, 0x022E)
                             Notify (PS2K, 0x02AE)
                         }
 
-                        Method (_Q19, 0, NotSerialized)  // _Qxx: EC Query - Fn+F12 > Volume Up
+                        Method (_Q19, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Handles volume up event when in Standard Mode and acts as F12 in Special Mode
                             Notify (PS2K, 0x0230)
                             Notify (PS2K, 0x02B0)
                         }
 
-                        Method (_Q10, 0, NotSerialized)  // _Qxx: EC Query - Fn+F7 > LCD backlight toggle
+                        Method (_Q10, 0, NotSerialized)  // _Qxx: EC Query
                         {
                             If (LEqual (^^PS2K.MODE, One))
                             {
@@ -2977,13 +2950,27 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             }
                         }
 
-                        Method (_Q1C, 0, NotSerialized)  // _Qxx: EC Query - Fn+Space > SHE Mode Toggle
+                        Method (_Q1C, 0, NotSerialized)  // _Qxx: EC Query
                         {
+                            And (FSBG (), 0xFF, Local0)
+                            If (LEqual (Local0, One))
+                            {
+                                FSBA (0x02)
+                            }
+
+                            If (LEqual (Local0, Zero))
+                            {
+                                FSBA (One)
+                            }
+
+                            If (LEqual (Local0, 0x02))
+                            {
+                                FSBA (Zero)
+                            }
                         }
 
-                        Method (_Q27, 0, NotSerialized)  // _Qxx: EC Query - Dedicated Touchpad Button
+                        Method (_Q27, 0, NotSerialized)  // _Qxx: EC Query
                         {
-                            // Notifies PS2 driver (regardless of key mode) to stop accepting packets and toggle LED
                             Notify (PS2K, 0x0237)
                             Notify (PS2K, 0x02B7)
                         }
@@ -3058,7 +3045,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             Notify (ADP1, 0x80)
                         }
 
-                        Method (STBR, 0, Serialized) // Set Brightness 
+                        Method (STBR, 0, Serialized)
                         {
                             Sleep (0x32)
                             Store (DerefOf (Index (PWAC, LBTN)), Local0)
@@ -3365,7 +3352,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 }
             }
 
-            Device (IMAP) // nVidia Corporation MCP79 Memory Controller
+            Device (IMAP)
             {
                 Name (_ADR, 0x00030001)  // _ADR: Address
                 OperationRegion (PIMC, PCI_Config, 0x60, 0x54)
@@ -3436,7 +3423,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 }
             }
 
-            Device (SBUS) // nVidia Corporation MCP79 SMBus
+            Device (SBUS)
             {
                 Name (_ADR, 0x00030002)  // _ADR: Address
                 OperationRegion (SMBE, PCI_Config, 0x04, 0x02)
@@ -3483,6 +3470,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 Method (ENAB, 0, NotSerialized)
                 {
                     Store (One, IOSE)
+                    \RMDT.P1 ("ENAB: SBUS enabled")
                 }
 
                 Scope (^^PCI0)
@@ -3636,7 +3624,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 }
             }
 
-            Device (SATA) // nVidia Corporation MCP79 SATA Controller
+            Device (SATA)
             {
                 Name (_ADR, 0x000B0000)  // _ADR: Address
                 Device (PRT0)
@@ -3753,7 +3741,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 }
             }
 
-            Device (HDEF) // nVidia Corporation MCP79 High Definition Audio, MCP uses special @8 address
+            Device (HDEF)
             {
                 Name (_ADR, 0x00080000)  // _ADR: Address
                 OperationRegion (PMCF, PCI_Config, 0x48, 0x02)
@@ -3773,7 +3761,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                     Offset (0x06), 
                     CDID,   8
                 }
-                
+
                 Method (_PRW, 0, NotSerialized)  // _PRW: Power Resources for Wake
                 {
                     Return (Package (0x02)
@@ -3797,7 +3785,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                     Return (PR02)
                 }
 
-                Device (IGPU) // nVidia Corporation GeForce 9400M GT
+                Device (IGPU)
                 {
                     Name (_ADR, Zero)  // _ADR: Address
                     OperationRegion (VSID, PCI_Config, Zero, 0x04)
@@ -7750,6 +7738,25 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                 Return (Local3)
             }
 
+            Method (TFSB, 4, NotSerialized)
+            {
+                Multiply (Arg3, 0x19, Local1)
+                Multiply (Arg1, Local1, Local1)
+                Add (One, One, Local2)
+                Multiply (Local2, Arg2, Local2)
+                Multiply (Local2, Arg0, Local2)
+                Store (Local1, Local3)
+                Multiply (Local3, 0x05, Local1)
+                Multiply (Local2, 0x04, Local2)
+                Divide (Local1, Local2, , Local3)
+                If (LEqual (VCO2, Zero))
+                {
+                    Multiply (Local3, 0x02, Local3)
+                }
+
+                Return (Local3)
+            }
+
             Method (PMPM, 1, NotSerialized)
             {
                 Multiply (0x0F, 0x03E8, Local0)
@@ -8263,8 +8270,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         {
             Package (0x05)
             {
-                0x53, 
-                0x3F, 
+                0x58, 
+                0x42, 
                 One, 
                 0x03, 
                 0x2B
@@ -8339,56 +8346,46 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         })
         Method (FSBA, 1, NotSerialized)
         {
-            If (LEqual (Arg0, FS70)) {}
-            Else
+            If (LAnd (LNotEqual (Arg0, FS70), LNotEqual (MPLM, One)))
             {
-                If (LEqual (Arg0, Zero))
-                {
-                    Store (0x06, NAID)
-                    Store (Zero, CSSE)
-                    Store (Zero, NAID)
-                }
-
+                Store (0x06, NAID)
+                Store (Zero, CSSE)
+                Store (Zero, NAID)
+                Store (Zero, CLFG)
+                Sleep (0x0A)
                 If (LGreater (FS70, Arg0))
                 {
-                    ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
-                        )))
-                    Sleep (0x0A)
-                    ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
-                        )))
-                    Sleep (0x0A)
-                    If (^EC.ECAV ())
-                    {
-                        If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
-                        {
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
-                                ^EC.SF08)
-                            Sleep (0x0A)
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
-                                ^EC.S254)
-                            Sleep (0x0A)
-                            Release (^EC.MUEC)
-                        }
-                    }
-
-                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
-                        GP53)
-                    Store (Zero, CLFG)
-                    Sleep (0x0A)
-                    If (LEqual (Arg0, Zero))
+                    FSEC (Arg0)
+                    If (LAnd (LEqual (FS70, One), LEqual (Arg0, Zero)))
                     {
                         FSNN (Zero)
                         Sleep (0x32)
                         FSGG (Zero)
                         Sleep (0x32)
                     }
+
+                    If (LAnd (LEqual (FS70, 0x02), LEqual (Arg0, Zero)))
+                    {
+                        FSNN (One)
+                        Sleep (0x32)
+                        FSNN (Zero)
+                        Sleep (0x32)
+                        FSGG (Zero)
+                        Sleep (0x32)
+                    }
+
+                    If (LAnd (LEqual (FS70, 0x02), LEqual (Arg0, One)))
+                    {
+                        FSNN (One)
+                        Sleep (0x32)
+                        FSGG (One)
+                        Sleep (0x32)
+                    }
                 }
 
                 If (LLess (FS70, Arg0))
                 {
-                    Store (Zero, CLFG)
-                    Sleep (0x0A)
-                    If (LEqual (FS70, Zero))
+                    If (LAnd (LEqual (FS70, Zero), LEqual (Arg0, One)))
                     {
                         FSNN (Zero)
                         Sleep (0x32)
@@ -8396,41 +8393,57 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         Sleep (0x32)
                     }
 
-                    ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
-                        )))
-                    Sleep (0x0A)
-                    ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
-                        )))
-                    Sleep (0x0A)
-                    If (^EC.ECAV ())
+                    If (LAnd (LEqual (FS70, Zero), LEqual (Arg0, 0x02)))
                     {
-                        If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
-                        {
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
-                                ^EC.SF08)
-                            Sleep (0x0A)
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
-                                ^EC.S254)
-                            Sleep (0x0A)
-                            Release (^EC.MUEC)
-                        }
+                        FSNN (Zero)
+                        Sleep (0x32)
+                        FSNN (One)
+                        Sleep (0x32)
+                        FSGG (0x02)
+                        Sleep (0x32)
                     }
 
-                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
-                        GP53)
-                }
+                    If (LAnd (LEqual (FS70, One), LEqual (Arg0, 0x02)))
+                    {
+                        FSNN (One)
+                        Sleep (0x32)
+                        FSGG (0x02)
+                        Sleep (0x32)
+                    }
 
-                If (LNotEqual (Arg0, Zero))
-                {
-                    Store (0x06, NAID)
-                    Store (One, CSSE)
-                    Store (Zero, NAID)
+                    FSEC (Arg0)
                 }
 
                 Store (Arg0, FS70)
             }
 
             Return (One)
+        }
+
+        Method (FSEC, 1, NotSerialized)
+        {
+            ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
+                )))
+            Sleep (0x0A)
+            ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
+                )))
+            Sleep (0x0A)
+            If (^EC.ECAV ())
+            {
+                If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
+                {
+                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
+                        ^EC.SF08)
+                    Sleep (0x0A)
+                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
+                        ^EC.S254)
+                    Sleep (0x0A)
+                    Release (^EC.MUEC)
+                }
+            }
+
+            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
+                GP53)
         }
 
         Method (FSGG, 1, NotSerialized)
@@ -8764,45 +8777,59 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
     Name (WAXB, Zero)
     Method (_PTS, 1, NotSerialized)  // _PTS: Prepare To Sleep
     {
-        Store (Arg0, DBG8)
+        \RMDT.P2 ("_PTS: called", Arg0)
         PTS (Arg0)
-        Store (Zero, Index (WAKP, Zero))
-        Store (Zero, Index (WAKP, One))
         If (LAnd (LEqual (Arg0, 0x04), LEqual (OSFL (), 0x02)))
         {
+            \RMDT.P1 ("_PTS: Sleeping for 0x0BB8 ms")
             Sleep (0x0BB8)
         }
 
         Store (ASSB, WSSB)
+        \RMDT.P2 ("_PTS: WSSB stored", ASSB)
         Store (AOTB, WOTB)
+        \RMDT.P2 ("_PTS: WOTB stored", AOTB)
         Store (AAXB, WAXB)
+        \RMDT.P2 ("_PTS: WAXB stored", AAXB)
         Store (Arg0, ASSB)
+        \RMDT.P2 ("_PTS: ASSB stored", Arg0)
         Store (OSFL (), AOTB)
+        \RMDT.P2 ("_PTS: OSFL() reported", AOTB)
         Store (OSYS (), OSTP)
+        \RMDT.P2 ("_PTS: OSYS() reported", OSTP)
         Store (Zero, AAXB)
+        \RMDT.P1 ("_PTS: finished")
     }
 
     Method (_WAK, 1, NotSerialized)  // _WAK: Wake
     {
+        \RMDT.P2 ("_WAK: called", Arg0)
         If (LOr (LLess (Arg0, One), LGreater (Arg0, 0x05)))
         {
+            \RMDT.P1 ("_WAK: wrong Arg0, setting to 0x03")
             Store (0x03, Arg0)
         }
+
         \_SB.PCI0.SBUS.ENAB ()
         Store (\_SB.PCI0.LPCB.EC.SF13, \_SB.LID0.LIDS)
+        \RMDT.P2 ("_WAK: stored LID status", \_SB.LID0.LIDS)
         WAK (Arg0)
         If (ASSB)
         {
             Store (WSSB, ASSB)
+            \RMDT.P2 ("_WAK: WSSB stored", ASSB)
             Store (WOTB, AOTB)
+            \RMDT.P2 ("_WAK: WOTB stored", AOTB)
             Store (WAXB, AAXB)
+            \RMDT.P2 ("_WAK: WAXB stored", AAXB)
         }
 
         Return (Package (0x02)
         {
-            Zero,
+            Zero, 
             Zero
         })
+        \RMDT.P1 ("_WAK: finished")
     }
 
     Name (_S0, Package (0x04)  // _S0_: S0 System State
@@ -8856,17 +8883,152 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
     {
         If (Arg0)
         {
+            \RMDT.P2 ("PTS: called", Arg0)
             \_SB.PCI0.LPCB.EC.EC0S (Arg0)
             \_SB.PCI0.LPCB.SPTS (Arg0)
             LPFS (Arg0)
         }
+
+        \RMDT.P1 ("PTS: finished")
     }
 
     Method (WAK, 1, NotSerialized)
     {
-        \_SB.PCI0.LPCB.EC.EC0W (Arg0)
-        \_SB.PCI0.LPCB.SWAK (Arg0)
-        LPWK (Arg0)
+        If (Arg0)
+        {
+            \RMDT.P2 ("WAK: called", Arg0)
+            \_SB.PCI0.LPCB.EC.EC0W (Arg0)
+            \_SB.PCI0.LPCB.SWAK (Arg0)
+            LPWK (Arg0)
+        }
+
+        \RMDT.P1 ("WAK: finished")
+    }
+
+    Device (RMDT)
+    {
+        Name (_HID, "RMD0000")  // _HID: Hardware ID
+        Name (RING, Package (0x0100) {})
+        Mutex (RTMX, 0x00)
+        Name (HEAD, Zero)
+        Name (TAIL, Zero)
+        Method (PUSH, 1, NotSerialized)
+        {
+            Acquire (RTMX, 0xFFFF)
+            Add (HEAD, One, Local0)
+            If (LGreaterEqual (Local0, SizeOf (RING)))
+            {
+                Store (Zero, Local0)
+            }
+
+            If (LNotEqual (Local0, TAIL))
+            {
+                Store (Arg0, Index (RING, HEAD))
+                Store (Local0, HEAD)
+            }
+
+            Release (RTMX)
+            Notify (RMDT, 0x80)
+        }
+
+        Method (FTCH, 0, NotSerialized)
+        {
+            Acquire (RTMX, 0xFFFF)
+            Store (Zero, Local0)
+            If (LNotEqual (HEAD, TAIL))
+            {
+                Store (DerefOf (Index (RING, TAIL)), Local0)
+                Increment (TAIL)
+                If (LGreaterEqual (TAIL, SizeOf (RING)))
+                {
+                    Store (Zero, TAIL)
+                }
+            }
+
+            Release (RTMX)
+            Return (Local0)
+        }
+
+        Method (COUN, 0, NotSerialized)
+        {
+            Acquire (RTMX, 0xFFFF)
+            Subtract (HEAD, TAIL, Local0)
+            If (LLess (Local0, Zero))
+            {
+                Add (Local0, SizeOf (RING), Local0)
+            }
+
+            Release (RTMX)
+            Return (Local0)
+        }
+
+        Method (P1, 1, NotSerialized)
+        {
+            PUSH (Arg0)
+        }
+
+        Method (P2, 2, Serialized)
+        {
+            Name (TEMP, Package (0x02) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            PUSH (TEMP)
+        }
+
+        Method (P3, 3, Serialized)
+        {
+            Name (TEMP, Package (0x03) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            Store (Arg2, Index (TEMP, 0x02))
+            PUSH (TEMP)
+        }
+
+        Method (P4, 4, Serialized)
+        {
+            Name (TEMP, Package (0x04) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            Store (Arg2, Index (TEMP, 0x02))
+            Store (Arg3, Index (TEMP, 0x03))
+            PUSH (TEMP)
+        }
+
+        Method (P5, 5, Serialized)
+        {
+            Name (TEMP, Package (0x05) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            Store (Arg2, Index (TEMP, 0x02))
+            Store (Arg3, Index (TEMP, 0x03))
+            Store (Arg4, Index (TEMP, 0x04))
+            PUSH (TEMP)
+        }
+
+        Method (P6, 6, Serialized)
+        {
+            Name (TEMP, Package (0x06) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            Store (Arg2, Index (TEMP, 0x02))
+            Store (Arg3, Index (TEMP, 0x03))
+            Store (Arg4, Index (TEMP, 0x04))
+            Store (Arg5, Index (TEMP, 0x05))
+            PUSH (TEMP)
+        }
+
+        Method (P7, 7, Serialized)
+        {
+            Name (TEMP, Package (0x07) {})
+            Store (Arg0, Index (TEMP, Zero))
+            Store (Arg1, Index (TEMP, One))
+            Store (Arg2, Index (TEMP, 0x02))
+            Store (Arg3, Index (TEMP, 0x03))
+            Store (Arg4, Index (TEMP, 0x04))
+            Store (Arg5, Index (TEMP, 0x05))
+            Store (Arg6, Index (TEMP, 0x06))
+            PUSH (TEMP)
+        }
     }
 }
 

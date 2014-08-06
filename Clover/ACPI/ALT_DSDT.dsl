@@ -1556,20 +1556,21 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
 
                     Method (EC0S, 1, NotSerialized) // Embedded Controller Sleep
                     {
-                        If(Arg0)
+                        If (LEqual (Arg0, 0x03))
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF28, One)))
+                            If (ECAV ())
                             {
-                                If (ECAV ())
+                                If (LNot (Acquire (MUEC, 0xFFFF)))
                                 {
-                                    If (LNot (Acquire (MUEC, 0xFFFF)))
-                                    {
-                                        Store (One, SF28)
-                                        Store (Zero, SF17)
-                                        Release (MUEC)
-                                    }
+                                    Store (One, SF28)
+                                    Release (MUEC)
                                 }
                             }
+                        }
+
+                        If (Arg0)
+                        {
+                            If (LLess (Arg0, 0x04)) {}
                         }
                     }
 
@@ -1577,13 +1578,13 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                     {
                         If (Arg0)
                         {
-                            If (LAnd(LEqual (Arg0, 0x03), LNotEqual (SF17, One)))
+                            If (LLess (Arg0, 0x04)) {}
+                            If (LEqual (Arg0, 0x03))
                             {
                                 If (ECAV ())
                                 {
                                     If (LNot (Acquire (MUEC, 0xFFFF)))
                                     {
-                                        Store (Zero, SF28)
                                         Store (One, SF17)
                                         Release (MUEC)
                                     }
@@ -2718,7 +2719,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                         FANC,   1,  // Fan Control bit
                         BLTS,   1, 
                         DC2S,   1, 
-                        FS70,   8, 
+                        FS70,   8,  // FSB value for SHE
                         Offset (0x14), 
                         BCAT,   16, 
                         BLTC,   8, 
@@ -2791,11 +2792,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                             Name (_STA, 0x0B)  // _STA: Status
                         }
 
-
-                        /* 
-                        ** No use for this approach as 1201N is unable to sense when the LID is being open, 
-                        ** so no wake from LID is possible
-                        
                         Device (LID0)
                         {
                             Name (_HID, EisaId ("PNP0C0D"))  // _HID: Hardware ID
@@ -2831,31 +2827,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
                                 Return (LIDS)
                             }
                         }
-                        */
-                        Device (LID0)
-                        {
-                            Name (_HID, EisaId ("PNP0C0D"))  // _HID: Hardware ID
-                            Name (LIDS, One)
-                            Method (_LID, 0, NotSerialized)  // _LID: Lid Status
-                            {
-                                If (^^PCI0.LPCB.EC.ECAV())
-                                {
-                                    If (LNot (Acquire (^^PCI0.LPCB.EC.MUEC, 0xFFFF)))
-                                    {
-                                        Store (^^PCI0.LPCB.EC.SF13, LIDS) // get LID state from EC
-                                        Release (^^PCI0.LPCB.EC.MUEC)
-                                    }
-                                    
-                                    XOr (LIDS, One, Local0) // EC stores inverted state, need to XOR
-                                    If (Local0) // if LID is closed 
-                                    {
-                                        Notify (SLPB, 0x80) // notify sleep button to cause S3
-                                    }
-                                }
 
-                                Return (LIDS)
-                            }
-                        }
                         Device (SLPB)
                         {
                             Name (_HID, EisaId ("PNP0C0E"))  // _HID: Hardware ID
@@ -2979,6 +2951,21 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
 
                         Method (_Q1C, 0, NotSerialized)  // _Qxx: EC Query - Fn+Space > SHE Mode Toggle
                         {
+                            And (FSBG (), 0xFF, Local0)
+                            If (LEqual (Local0, 0x01)) // High Performance
+                            {
+                                FSBA (0x00) // Change to Super High 
+                            }
+                            
+                            If (LEqual (Local0, 0x00)) // Super High Performance
+                            {
+                                FSBA (0x02) // Change to Power Saver
+                            }
+                            
+                            If (LEqual (Local0, 0x02)) // Power Saver
+                            {
+                                FSBA (0x01) // Change to High Performance
+                            }
                         }
 
                         Method (_Q27, 0, NotSerialized)  // _Qxx: EC Query - Dedicated Touchpad Button
@@ -8339,92 +8326,79 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         })
         Method (FSBA, 1, NotSerialized)
         {
-            If (LEqual (Arg0, FS70)) {}
-            Else
+            // Do not adjust FSB if requested mode is current or FSB667 set in BIOS
+            If (LAnd (LNotEqual (Arg0, FS70), LNotEqual (MPLM, One)))
             {
-                If (LEqual (Arg0, Zero))
-                {
-                    Store (0x06, NAID)
-                    Store (Zero, CSSE)
-                    Store (Zero, NAID)
-                }
-
+                Store (0x06, NAID)
+                Store (Zero, CSSE) // Allow adjusting FSB regardless of SHE mode
+                Store (Zero, NAID) // By default Power Saving is being blocked
+                Store (Zero, CLFG)
+                Sleep (0x0A)
                 If (LGreater (FS70, Arg0))
                 {
-                    ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
-                        )))
-                    Sleep (0x0A)
-                    ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
-                        )))
-                    Sleep (0x0A)
-                    If (^EC.ECAV ())
+                    FSEC (Arg0)
+                    If (LAnd (LEqual (FS70, One), LEqual (Arg0, Zero))) //1>0
                     {
-                        If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
-                        {
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
-                                ^EC.SF08)
-                            Sleep (0x0A)
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
-                                ^EC.S254)
-                            Sleep (0x0A)
-                            Release (^EC.MUEC)
-                        }
+                        //Going from 133.34
+                        FSNN (Zero) //134.34
+                        Sleep (0x32)
+                        FSGG (Zero) //135.99
+                        Sleep (0x32)
                     }
 
-                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
-                        GP53)
-                    Store (Zero, CLFG)
-                    Sleep (0x0A)
-                    If (LEqual (Arg0, Zero))
+                    If (LAnd (LEqual (FS70, 0x02), LEqual (Arg0, Zero))) //1>0
                     {
-                        FSNN (Zero)
+                        //Going from 130.51
+                        FSNN (One) //132.01
                         Sleep (0x32)
-                        FSGG (Zero)
+                        FSNN (Zero) //134.34
+                        Sleep (0x32)
+                        FSGG (Zero) //135.99
+                        Sleep (0x32)
+                    }
+
+                    If (LAnd (LEqual (FS70, 0x02), LEqual (Arg0, One))) //2>1
+                    {
+                        //Going from 130.51
+                        FSNN (One) //132.01
+                        Sleep (0x32)
+                        FSGG (One) //133.34
                         Sleep (0x32)
                     }
                 }
 
                 If (LLess (FS70, Arg0))
                 {
-                    Store (Zero, CLFG)
-                    Sleep (0x0A)
-                    If (LEqual (FS70, Zero))
+                    If (LAnd (LEqual (FS70, Zero), LEqual (Arg0, One))) //0>1
                     {
-                        FSNN (Zero)
+                        //Going from 135.99
+                        FSNN (Zero) //134.34
                         Sleep (0x32)
-                        FSGG (One)
+                        FSGG (One)  //133.34
                         Sleep (0x32)
                     }
 
-                    ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
-                        )))
-                    Sleep (0x0A)
-                    ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
-                        )))
-                    Sleep (0x0A)
-                    If (^EC.ECAV ())
+                    If (LAnd (LEqual (FS70, Zero), LEqual (Arg0, 0x02))) //0>2
                     {
-                        If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
-                        {
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
-                                ^EC.SF08)
-                            Sleep (0x0A)
-                            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
-                                ^EC.S254)
-                            Sleep (0x0A)
-                            Release (^EC.MUEC)
-                        }
+                        //Going from 135.99
+                        FSNN (Zero) //134.34
+                        Sleep (0x32)
+                        FSNN (One) //132.01
+                        Sleep (0x32)
+                        FSGG (0x02) //130.51
+                        Sleep (0x32)
                     }
 
-                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
-                        GP53)
-                }
+                    If (LAnd (LEqual (FS70, One), LEqual (Arg0, 0x02))) //1>2
+                    {
+                        //Going from 133.34
+                        FSNN (One) //132.01
+                        Sleep (0x32)
+                        FSGG (0x02)//130.51
+                        Sleep (0x32)
+                    }
 
-                If (LNotEqual (Arg0, Zero))
-                {
-                    Store (0x06, NAID)
-                    Store (One, CSSE)
-                    Store (Zero, NAID)
+                    FSEC (Arg0)
                 }
 
                 Store (Arg0, FS70)
@@ -8433,13 +8407,37 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
             Return (One)
         }
 
+        Method (FSEC, 1, NotSerialized)
+        {
+            ^EC.ECXW (0xE1, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x02
+                )))
+            Sleep (0x0A)
+            ^EC.ECXW (0xE4, DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x03
+                )))
+            Sleep (0x0A)
+            If (^EC.ECAV ())
+            {
+                If (LNot (Acquire (^EC.MUEC, 0xFFFF)))
+                {
+                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), Zero)), 
+                        ^EC.SF08)
+                    Sleep (0x0A)
+                    Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), One)), 
+                        ^EC.S254)
+                    Sleep (0x0A)
+                    Release (^EC.MUEC)
+                }
+            }
+
+            Store (DerefOf (Index (DerefOf (Index (CKFC, Arg0)), 0x04)), 
+                GP53)
+        }
+
         Method (FSGG, 1, NotSerialized)
         {
-            Store (DerefOf (Index (DerefOf (Index (CKFG, Arg0)), Zero)), 
-                BPLM)
+            Store (DerefOf (Index (DerefOf (Index (CKFG, Arg0)), Zero)), BPLM)
             Sleep (0x0A)
-            Store (DerefOf (Index (DerefOf (Index (CKFG, Arg0)), One)), 
-                BPLN)
+            Store (DerefOf (Index (DerefOf (Index (CKFG, Arg0)), One)), BPLN)
             Sleep (0x0A)
             Store (One, CLFG)
             Sleep (0x0A)
@@ -8449,11 +8447,9 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
 
         Method (FSNN, 1, NotSerialized)
         {
-            Store (DerefOf (Index (DerefOf (Index (CKFN, Arg0)), Zero)), 
-                BPLM)
+            Store (DerefOf (Index (DerefOf (Index (CKFN, Arg0)), Zero)), BPLM)
             Sleep (0x0A)
-            Store (DerefOf (Index (DerefOf (Index (CKFN, Arg0)), One)), 
-                BPLN)
+            Store (DerefOf (Index (DerefOf (Index (CKFN, Arg0)), One)), BPLN)
             Sleep (0x0A)
             Store (One, CLFG)
             Sleep (0x0A)
@@ -8788,6 +8784,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
         {
             Store (0x03, Arg0)
         }
+
+        ShiftLeft (Arg0, 0x04, DBG8)
         \_SB.PCI0.SBUS.ENAB ()
         Store (\_SB.PCI0.LPCB.EC.SF13, \_SB.LID0.LIDS)
         WAK (Arg0)
@@ -8798,11 +8796,22 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "A1469", "A1469001", 0x00000001)
             Store (WAXB, AAXB)
         }
 
-        Return (Package (0x02)
+        If (DerefOf (Index (WAKP, Zero)))
         {
-            Zero,
-            Zero
-        })
+            Store (Zero, Index (WAKP, One))
+        }
+        Else
+        {
+            Store (Arg0, Index (WAKP, One))
+        }
+
+        Notify (\_SB.PCI0.EHC1, Zero)
+        Notify (\_SB.PCI0.EHC2, Zero)
+        Notify (\_SB.PCI0.OHC1, Zero)
+        Notify (\_SB.PCI0.OHC2, Zero)
+        Notify (\_SB.PCI0.RP05.ARPT, Zero)
+        Notify (\_SB.PCI0.RP06.GIGE, Zero)
+        Return (WAKP)
     }
 
     Name (_S0, Package (0x04)  // _S0_: S0 System State
