@@ -63,21 +63,19 @@
 							<key>Threshold_High</key>
 							<array>
 								<integer>55</integer>
-								<integer>70</integer>
-								<integer>74</integer>
+								<integer>75</integer>
+								<integer>99</integer>
 								<integer>100</integer>
 							</array>
 							<key>Threshold_Low</key>
 							<array>
 								<integer>0</integer>
-								<integer>40</integer>
-								<integer>60</integer>
-								<integer>75</integer>
+								<integer>85</integer>
+								<integer>99</integer>
+								<integer>100</integer>
 							</array>
 						</dict>
 						<key>control-id</key>
-						<integer>18</integer>
-						<key>default-control-id</key>
 						<integer>18</integer>
 					</dict>
 					<key>Vendor10deDevice087f</key>
@@ -111,21 +109,19 @@
 							<key>Threshold_High</key>
 							<array>
 								<integer>55</integer>
-								<integer>70</integer>
-								<integer>74</integer>
+								<integer>75</integer>
+								<integer>99</integer>
 								<integer>100</integer>
 							</array>
 							<key>Threshold_Low</key>
 							<array>
 								<integer>0</integer>
-								<integer>40</integer>
-								<integer>60</integer>
-								<integer>75</integer>
+								<integer>85</integer>
+								<integer>99</integer>
+								<integer>100</integer>
 							</array>
 						</dict>
 						<key>control-id</key>
-						<integer>18</integer>
-						<key>default-control-id</key>
 						<integer>18</integer>
 					</dict>
 				</dict>
