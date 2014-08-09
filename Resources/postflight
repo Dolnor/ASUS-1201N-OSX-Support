@@ -2,7 +2,6 @@
 
 sle="${3}/System/Library/Extensions"
 osver=`sw_vers -productVersion`
-rc="/etc/rc.shutdown.d"
 
 # install codec commander based on system version
 if [ ${osver} == '10.7' -o ${osver} == '10.8' -o ${osver%??} == '10.7' -o ${osver%??} == '10.8' ]
@@ -28,12 +27,11 @@ backup="${3}/tmp/temp.plist"
         serial=$( /usr/libexec/PlistBuddy -c "Print SMBIOS:SerialNumber" ${backup} )
         boardserial=$( /usr/libexec/PlistBuddy -c "Print SMBIOS:BoardSerialNumber" ${backup} )
     else
-        week=CDFGHJKLMNPQRTVWXY12345678
         chars=ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890
-        week_letters=`echo ${week:$(($RANDOM%${#week})):2}`
+        week_number=`echo $(($RANDOM%21+24))` # produced week 20 to week 44 in 2009
         function random_char { echo ${chars:$(($RANDOM%${#chars})):1}; }
-        serial="W89"$week_letters$(random_char)$(random_char)$(random_char)"9A7"
-        boardserial="W89"$week_letters$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)"9A7"
+        serial="W89"$week_number$(random_char)$(random_char)$(random_char)"9A7"
+        boardserial="W89"$week_number$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)$(random_char)"9A7"
     fi
 
 /usr/libexec/PlistBuddy -c "Set SMBIOS:SerialNumber $serial" ${config}
@@ -67,16 +65,6 @@ efi_mp="/Volumes/EFI"
 	then
 			diskutil umount $efi_mp
     fi
-
-# set up logout hook for nvram saving in yosemite - not needed in DP5+
-if [ ${osver} == '10.10' -o ${osver%??} == '10.10' ]
-then
-    if [ -d "$rc" ];
-    then
-        #chmod +x "${rc}"/80.save_nvram_plist.local
-        #defaults write com.apple.loginwindow LogoutHook "${rc}"/80.save_nvram_plist.local
-    fi
-fi
 
 ## delete temp files used during installation
 rm -R "${3}/tmp/EFI"

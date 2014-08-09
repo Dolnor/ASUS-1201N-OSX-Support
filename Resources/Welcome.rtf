@@ -18,13 +18,26 @@ It is advised to \ul enable FSB667 clock \ulnone under Security > North-bridge P
 
 \b Change Log:\
 \
+Version 1.2. (August 9th, 2014):\
+\
+\pard\tx626\pardeftab626\pardirnatural
+
+\b0 \cf0 - Corrected a problem with serial number generator (thanks @theconnactic)\
+- Fixed error where installer was finishing with Failed message\
+\
+
+\b NB: 
+\b0 Delete config.plist from EFI system partition before running the installer to ensure it generates a proper serial instead of backing up the old invalid one!
+\b \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+\cf0 \
 Version 1.1. (August 7th, 2014):\
 
 \b0  \
 - Clover binaries updated  to r2796\
 - Fix problem when keyboard and touchpad would freeze at wake\
 - HWMonitor app updated to utilize native Yosemite drop-down transparency\
-- Removed LogoutHoot as Yosemite DP5 is not properly executing launchd at restart/shutdown\
+- Removed LogoutHoot as Yosemite DP5 is now properly executing launchd at restart/shutdown\
 - Fixed VoodooPS2Daemon installing in wrong directory and subsequently not working\
 - Reworked AGPM for ION, now properly scaling GPU clock after sleep 
 \b \
